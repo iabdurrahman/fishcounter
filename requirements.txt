@@ -1,0 +1,10 @@
+#Cython
+#wheel
+opencv-python
+imagetk
+#torch==2.5.1
+#torchvision==0.20.1
+#torchaudio==2.5.1
+requests
+filterpy
+pyserial
