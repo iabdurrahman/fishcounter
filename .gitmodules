@@ -1,3 +1,0 @@
-[submodule "scripts/YOLOv6"]
-	path = scripts/YOLOv6
-	url = https://github.com/meituan/YOLOv6.git

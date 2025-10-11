@@ -1,0 +1,8 @@
+# backup files
+*.bak
+*_bak
+*~
+
+# python binaries
+__pycache__/
+*.pyc
