@@ -16,6 +16,7 @@ import time
 import sys
 import pathlib
 import argparse
+import yaml
 
 # Pastikan file object_detector.py dan hardware_controller.py ada di dalam folder 'utils'
 try:
@@ -86,7 +87,7 @@ class FishCounterApp(tk.Tk):
         # Siapkan semua halaman yang ada
         for F in (MainMenu, FreeCountPage, TargetCountPage):
             page_name = F.__name__
-            frame = F(parent=container, controller=self)
+            frame = F(parent=container, controller=self, config=self.config)
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
@@ -227,9 +228,12 @@ class OnScreenKeyboard(ttk.Frame):
 # HALAMAN MENU UTAMA
 # ============================================================================
 class MainMenu(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, config=None):
         super().__init__(parent)
         self.controller = controller
+
+        # configuration from parent
+        self.config = config
 
         # 1. Siapkan Style
         style = ttk.Style()
@@ -283,12 +287,15 @@ class MainMenu(ttk.Frame):
 # KELAS DASAR UNTUK HALAMAN PENGHITUNGAN
 # ============================================================================
 class BaseCountingPage(ttk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller, config=None):
         super().__init__(parent)
         self.controller = controller
         self.video_thread = None
         self.stop_event = threading.Event()
         self.cap = None
+
+        # config from parent
+        self.config = config
 
         ## UNTUK PWM MOTOR ##
         self.current_speed_level = 3
@@ -573,8 +580,8 @@ class BaseCountingPage(ttk.Frame):
 # HALAMAN PERHITUNGAN BEBAS
 # ============================================================================
 class FreeCountPage(BaseCountingPage):
-    def __init__(self, parent, controller):
-        super().__init__(parent, controller)
+    def __init__(self, parent, controller, config=None):
+        super().__init__(parent, controller, config=config)
         # Tidak ada kustomisasi khusus, semua sudah di Base class
 
 
@@ -582,8 +589,8 @@ class FreeCountPage(BaseCountingPage):
 # HALAMAN PERHITUNGAN SESUAI TARGET
 # ============================================================================
 class TargetCountPage(BaseCountingPage):
-    def __init__(self, parent, controller):
-        super().__init__(parent, controller)
+    def __init__(self, parent, controller, config=None):
+        super().__init__(parent, controller, config=config)
 
         self.target = 0
         self.target_sound_played = False
@@ -719,6 +726,8 @@ def read_config_and_sanitize(parser_args_result):
                 "baudrate" : DEFAULT_ARDUINO_BAUDRATE
             },
 
+            "buzzer_gpio" : DEFAULT_BUZZER_GPIO,
+
             # model file
             "model" : DEFAULT_MODEL,
 
@@ -738,7 +747,7 @@ def read_config_and_sanitize(parser_args_result):
                     "dij_threshold"  : DEFAULT_VISION_TUNE_AND_TRACK_DIJ_THRESHOLD,
                     "diou_threshold" : DEFAULT_VISION_TUNE_AND_TRACK_DIOU_THRESHOLD
                 }
-            }
+            },
 
             # method for counter mode
             "method_selected_for_counter_mode" : DEFAULT_METHOD_SELECTED_FOR_COUNTER_MODE
@@ -900,7 +909,7 @@ def read_config_and_sanitize(parser_args_result):
     config.update({"source_str" : []})                  # initialize with empty list
     for source in config["source"]:
         # add to config
-        config["source_str"].append(str(source))
+        config["source_str"].append(str(resolve_path_with_home(source)))
 
 
     # ##################################################
@@ -1256,7 +1265,7 @@ if __name__ == "__main__":
 
 
     # parse command line
-    config = read_config_and_sanitize(parser.parse_args(sys.argv))
+    config = read_config_and_sanitize(parser.parse_args(sys.argv[1:]))
 
     app = FishCounterApp(config)
     app.mainloop()
