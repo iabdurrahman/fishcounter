@@ -17,7 +17,7 @@ class RKNN_model_container():
             print('Init runtime environment failed')
             exit(ret)
         print('done')
-        
+
         self.rknn = rknn
 
     # def __del__(self):
@@ -34,7 +34,7 @@ class RKNN_model_container():
             inputs = [inputs]
 
         result = self.rknn.inference(inputs=inputs)
-    
+
         return result
 
     def release(self):

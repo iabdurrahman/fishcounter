@@ -45,7 +45,7 @@ class Torch_model_container:
             result = list(result)
         if not isinstance(result, list):
             result = [result]
-        
+
         result = flatten_list(result)
 
         for i in range(len(result)):

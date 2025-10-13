@@ -15,8 +15,9 @@ class ObjectDetector:
 
     #The main class to handle object detection, tracking, and counting in a video stream.
     #It orchestrates the pre-processing, inference, post-processing, tracking, and visualization.
-    
-    def __init__(self, model_path, img_size=(640, 640), obj_thresh=0.048, nms_thresh=0.048):
+
+    def __init__(self, model_path, img_size=(640, 640), obj_thresh=0.048, nms_thresh=0.048,
+        max_age=5, min_hits=1, diou_threshold=0.3, dij_threshold=0.9):
         # --- Configuration ---
         self.IMG_SIZE = img_size
         self.OBJ_THRESH = obj_thresh
@@ -27,7 +28,7 @@ class ObjectDetector:
 
         print("INFO: Initializing model...")
         self.model = RKNN_model_container(model_path, 'rk3588')
-        self.mot_tracker = Sort(max_age=5, min_hits=1, diou_threshold=0.3, dij_threshold=0.9) # Using more robust parameters
+        self.mot_tracker = Sort(max_age=max_age, min_hits=min_hits, diou_threshold=diou_threshold, dij_threshold=dij_threshold) # Using more robust parameters
         self.metrics_logger = MetricsLogger('detection_metrics.csv')
         self.co_helper = COCO_test_helper(enable_letter_box=True)
         print("INFO: Model and components initialized.")
@@ -36,7 +37,7 @@ class ObjectDetector:
         self.frame_counter = 0
         self.previous_track_2 = np.empty((0,5))
         self.previous_track_3 = np.empty((0,5))
-        
+
         # --- State Variables for Multiple Counting Methods ---
         self.fish_count_1 = 0
         self.counted_ids_1 = set()
@@ -51,7 +52,7 @@ class ObjectDetector:
         self.line_y_pos_bottom = int(0.4 * self.IMG_SIZE[1])
         self.line_y_pos_top = int(0.3 * self.IMG_SIZE[1])
 
-        
+
     # ====================================================================
     # fOR RESETING THE DETECTOR STATE
     # ====================================================================
@@ -69,13 +70,13 @@ class ObjectDetector:
     # ====================================================================
 
     def process_frame(self, frame):
-        
+
         #Accepts a single frame, performs detection and tracking, and returns the annotated frame.
         #:param frame: A single video frame (NumPy array).
         #:return: A tuple containing (annotated_frame, dictionary_of_counts).
-        
+
         self.frame_counter += 1
-        
+
         # --- 1. Pre-processing ---
         start_time = time.time()
         img_processed, original_frame = self._preprocess(frame)
@@ -90,7 +91,7 @@ class ObjectDetector:
         start_time = time.time()
         boxes, _, scores = self._post_process(model_outputs)
         postprocess_time = time.time() - start_time
-        
+
         # --- 4. Tracking ---
         start_time = time.time()
         detections = np.column_stack((boxes, scores)) if boxes.size > 0 else np.empty((0, 5))
@@ -105,7 +106,7 @@ class ObjectDetector:
 
         # --- 6. Logging (Optional) ---
         # self.metrics_logger.log(...)
-        
+
         counts = {
             "count_1": self.fish_count_1,
             "count_2": self.fish_count_2,
@@ -131,7 +132,7 @@ class ObjectDetector:
         frame_width = vis_frame.shape[1]
         # PERBAIKAN: Gambar garis horizontal dengan benar
         cv2.line(vis_frame, (0, self.line_y_pos), (frame_width, self.line_y_pos), (0, 255, 0), 3)
-    
+
 
 
         # Draw raw detections in green
@@ -142,7 +143,7 @@ class ObjectDetector:
         # Draw active tracks in blue
         for track in tracks:
             x1, y1, x2, y2, track_id = map(int, track)
-            
+
             # Draw bounding box and ID
             cv2.rectangle(vis_frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
             cv2.putText(vis_frame, f"ID: {track_id}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
@@ -161,17 +162,17 @@ class ObjectDetector:
             if track_id not in self.counted_ids_3:
                 # Cari posisi track ini di frame sebelumnya
                 prev_track_match = self.previous_track_2[self.previous_track_2[:, 4] == track_id]
-                
+
                 if len(prev_track_match) > 0:
                     # Ambil koordinat y dari tepi ATAS box sebelumnya
                     prev_y1 = int(prev_track_match[0][1])
-                    
+
                     # Ambil koordinat y dari tepi ATAS box saat ini (y1 sudah ada dari `map(int, track)`)
-                    current_y1 = int(y1) 
-                    
+                    current_y1 = int(y1)
+
                     # Ambil posisi garis hitung
                     counting_line_y = self.line_y_pos
-    
+
                     # KONDISI DIUBAH: Cek jika box melintasi garis dari BAWAH ke ATAS
                     # Logikanya: Posisi atas box sebelumnya harus di bawah garis (nilai Y lebih besar)
                     # dan posisi atas box sekarang harus di atas garis (nilai Y lebih kecil).
@@ -180,9 +181,9 @@ class ObjectDetector:
                         self.counted_ids_3.add(track_id)
                         # Opsional: Beri warna khusus pada box yang baru terhitung
                         cv2.rectangle(vis_frame, (x1, y1), (x2, y2), (0, 255, 255), 2) # Warna kuning
-            
 
-        # --- FIX: Update historical track data using .copy() to prevent reference errors --- 
+
+        # --- FIX: Update historical track data using .copy() to prevent reference errors ---
         self.previous_track_3 = self.previous_track_2
         self.previous_track_2 = tracks.copy() if len(tracks) > 0 else np.empty((0, 5))
 
@@ -191,25 +192,25 @@ class ObjectDetector:
         cv2.putText(vis_frame, f'Method 1: {self.fish_count_1}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         cv2.putText(vis_frame, f'Method 2: {self.fish_count_2}', (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         cv2.putText(vis_frame, f'Method 3: {self.fish_count_3}', (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        
+
         return vis_frame
-    
+
     def _check_cross(self, boundary, start_centroid, current_centroid):
         #Helper function to check if a line segment intersects a boundary line.
         x0_0, y0_0 = boundary[0]
         x1_0, y1_0 = boundary[1]
         x0_1, y0_1 = start_centroid
         x1_1, y1_1 = current_centroid
-        
+
         dx0 = x1_0 - x0_0
         dy0 = y1_0 - y0_0
         dx1 = x1_1 - x0_1
         dy1 = y1_1 - y0_1
-        
+
         denominator = dx1 * dy0 - dy1 * dx0
         if denominator == 0:
             return False
-        
+
         t = ((x0_0 - x0_1) * dy1 - (y0_0 - y0_1) * dx1) / denominator
         u = ((x0_0 - x0_1) * dy0 - (y0_0 - y0_1) * dx0) / denominator
         if 0 <= t <= 1 and 0 <= u <= 1:
@@ -309,7 +310,7 @@ class ObjectDetector:
         # Distribution Focal Loss
         x = torch.tensor(position)
         n,c,h,w = x.shape
-        p_num = 4   
+        p_num = 4
         mc = c//p_num
         y = x.reshape(n,p_num,mc,h,w).softmax(2)
         acc_metrix = torch.arange(mc).float().reshape(1,1,mc,1,1)

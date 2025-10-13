@@ -32,7 +32,7 @@ class ONNX_model_container_py:
         # sess_options=
         sp_options = rt.SessionOptions()
         sp_options.log_severity_level = 3
-        # [1 for info, 2 for warning, 3 for error, 4 for fatal] 
+        # [1 for info, 2 for warning, 3 for error, 4 for fatal]
         self.sess = rt.InferenceSession(model_path, sess_options=sp_options, providers=['CPUExecutionProvider'])
         self.model_path = model_path
 
@@ -56,7 +56,7 @@ class ONNX_model_container_py:
                 type_map[_input.type] != input_datas[i].dtype:
                 print('WARNING: force data-{} from {} to {}'.format(i, input_datas[i].dtype, type_map[_input.type]))
                 input_datas[i] = input_datas[i].astype(type_map[_input.type])
-            
+
             # reshape if need
             if _input.shape != list(input_datas[i].shape):
                 if ignore_dim_with_zero(input_datas[i].shape,_input.shape):
@@ -107,8 +107,7 @@ def reset_onnx_shape(onnx_model_path, output_path, input_shapes):
                 command += "{}:{} ".format(input_name, ','.join([str(v) for v in input_shapes[i]]))
         else:
             command = "python -m onnxsim {} {} --input-shape {}".format(onnx_model_path, output_path, ','.join([str(v) for v in input_shapes[0]]))
-    
+
     print(command)
     os.system(command)
     return output_path
-    

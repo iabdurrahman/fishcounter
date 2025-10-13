@@ -8,3 +8,4 @@ imagetk
 requests
 filterpy
 pyserial
+PyYAML

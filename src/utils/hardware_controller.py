@@ -58,7 +58,7 @@ class MotorController:
         """Mengirim perintah untuk mengatur level kecerahan LED."""
         command = {"cmd": "SET_BRIGHTNESS", "level": level}
         return self.send_command(command)
-    
+
 
     # for speed control
     def set_motor_speed(self, level):
@@ -69,21 +69,21 @@ class MotorController:
     def send_command(self, command_dict):
         """
         Mengubah dictionary menjadi string JSON dan mengirimkannya.
-        
+
         Args:
             command_dict (dict): Perintah dalam format dictionary (e.g., {"cmd": "START"}).
         """
         if not self.ser or not self.ser.is_open:
             print("[MotorController] ERROR: Not connected. Cannot send command.")
             return False
-        
+
         try:
             # 2. Ubah dictionary menjadi string JSON
             json_string = json.dumps(command_dict)
-            
+
             # Tambahkan newline sebagai penanda akhir pesan
             full_message = json_string + '\n'
-            
+
             self.ser.write(full_message.encode('utf-8'))
             print(f"[MotorController] Sent JSON: {json_string}")
             return True
@@ -101,7 +101,7 @@ class MotorController:
         """Mengirim perintah untuk mematikan motor."""
         command = {"cmd": "STOP MOTOR"}
         return self.send_command(command)
-        
+
     def request_battery_voltage(self):
         """Mengirim permintaan untuk mendapatkan data tegangan baterai."""
         command = {"cmd": "BAT"}
@@ -117,7 +117,7 @@ class MotorController:
         """Membaca dan mem-parsing respons JSON dari microcontroller."""
         if not self.ser or not self.ser.is_open or self.ser.in_waiting == 0:
             return None # Tidak ada data untuk dibaca
-        
+
         try:
             response_line = self.ser.readline().decode('utf-8').strip()
             if response_line:
@@ -129,9 +129,9 @@ class MotorController:
             print(f"[MotorController] ERROR: Received invalid JSON: {response_line}")
         except Exception as e:
             print(f"[MotorController] ERROR: Failed to read data. {e}")
-        
+
         return None
-    
+
     # start and stop charging
     def start_charging(self):
         """Mengirim perintah untuk memulai urutan charging."""
@@ -142,7 +142,7 @@ class MotorController:
         """Mengirim perintah untuk menghentikan charging."""
         command = {"cmd": "STOP_CHARGE"}
         return self.send_command(command)
-    
+
 
     def close(self):
         """Closes the serial connection."""
@@ -153,7 +153,7 @@ class MotorController:
 
 # --- Example Usage (for testing this file directly) ---
 if __name__ == '__main__':
-    MOTOR_PORT = 'COM8' 
+    MOTOR_PORT = 'COM8'
     print(f"--- Testing MotorController with JSON on port {MOTOR_PORT} ---")
     motor = MotorController(port=MOTOR_PORT)
 
@@ -166,12 +166,12 @@ if __name__ == '__main__':
             print("\nMengirim perintah STOP...")
             motor.stop_motor()
             time.sleep(1)
-            
+
             print("\nMeminta data baterai...")
             motor.request_battery_voltage()
             # Coba baca respons dari uC (untuk simulasi)
             # Di tes nyata, ESP32 Anda akan mengirim balasan.
-            response = motor.read_response() 
+            response = motor.read_response()
             if response:
                 print(f"Respons diterima: {response}")
             else:

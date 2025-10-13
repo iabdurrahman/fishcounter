@@ -1,0 +1,47 @@
+# where is the arduino serial/uart port
+arduino:
+    uart: /dev/arduino0
+    baudrate: 9600
+
+# gpio for buzzer
+buzzer_gpio: 47
+
+# path to ai model
+# if you use ~ as home in path, make sure the program
+# run with correct user, if you use relative path
+# the pathc is relative to laucher code
+# (src/launcher_app.py) and not this yaml file
+model: ~/yolov6.rknn
+
+# path to additional video files
+# currently you can't just add folder here
+# you need to list all individual video files
+# same with model, if you use ~ to refer to home
+# you need to make sure that you run the program
+# with correct user
+source:
+    - ~/video.mp4
+
+# tunning settings for machine vision
+# read README.md for more detail information
+vision:
+    detection:
+        obj_thresh:      0.2
+        nms_thresh:      0.6
+
+    tune_and_track:
+        max_age:         8
+        min_hits:        3
+        dij_threshold:   0.85
+        diou_threshold:  0.3
+
+# method seelcted for counter mode
+# this is fixed string with available/allowed value are:
+# count_1
+#    for method 1
+# count_2
+#    for method 2
+# count_3
+#    for method 3
+# default is count_3
+method_selected_for_counter_mode: count_3

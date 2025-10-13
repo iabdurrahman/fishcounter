@@ -10,3 +10,6 @@ __pycache__/
 # ignore datasets and models
 models/
 datasets/
+
+# ignore configuration file
+config.yaml

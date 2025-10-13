@@ -113,7 +113,7 @@ class KalmanBoxTracker:
         self.kf.Q[-1,-1] *= 0.01
         self.kf.Q[4:,4:] *= 0.01
         self.kf.x[:4] = BBoxUtils.convert_bbox_to_z(bbox)
-        
+
         self.time_since_update = 0
         self.id = KalmanBoxTracker.count
         KalmanBoxTracker.count += 1
@@ -159,7 +159,7 @@ class Sort:
 
     def update(self, dets=np.empty((0, 5))):
         self.frame_count += 1
-        
+
         # 1. Predict next state for existing trackers
         trks = np.zeros((len(self.trackers), 5))
         to_del = []
@@ -168,7 +168,7 @@ class Sort:
             trks[t] = [pos[0], pos[1], pos[2], pos[3], 0]
             if np.any(np.isnan(pos)):
                 to_del.append(t)
-        
+
         trks = np.ma.compress_rows(np.ma.masked_invalid(trks))
         for t in sorted(to_del, reverse=True):
             self.trackers.pop(t)
@@ -197,7 +197,7 @@ class Sort:
         dij_matrix_rem = BBoxUtils.dij_distance(um_dets1_arr, um_trks2_arr)
         diou_matrix_rem = BBoxUtils.DIOU_2(iou_matrix_rem, dij_matrix_rem)
         matched3, um_dets3_indices, _ = self._associate(um_dets1_arr, um_trks2_arr, diou_matrix_rem, self.diou_threshold)
-        
+
         # 6. Update trackers with their associated detections
         for det_idx, trk_idx in matched1:
             self.trackers[trk_idx].update(highscore_dets[det_idx])
@@ -223,11 +223,11 @@ class Sort:
             if trk.time_since_update < 1 and (trk.hits >= self.min_hits or self.frame_count <= self.min_hits):
                 d = trk.get_state()[0]
                 ret.append(np.concatenate((d, [trk.id + 1])).reshape(1, -1))
-            
+
             # Remove dead tracklets
             if trk.time_since_update > self.max_age:
                 self.trackers.pop(i)
-        
+
         return np.concatenate(ret) if ret else np.empty((0, 5))
 
     def _associate(self, dets, trks, metric_matrix, threshold):
@@ -237,17 +237,17 @@ class Sort:
 
         # Use negative matrix because linear_sum_assignment finds minimum cost
         row_ind, col_ind = linear_sum_assignment(-metric_matrix)
-        
+
         matched_indices = []
         for r, c in zip(row_ind, col_ind):
             if metric_matrix[r, c] >= threshold:
                 matched_indices.append([r, c])
-        
+
         matched_indices = np.array(matched_indices) if matched_indices else np.empty((0, 2))
 
         unmatched_detections = np.delete(np.arange(len(dets)), matched_indices[:, 0] if matched_indices.size > 0 else [])
         unmatched_trackers = np.delete(np.arange(len(trks)), matched_indices[:, 1] if matched_indices.size > 0 else [])
-        
+
         return matched_indices.astype(int), unmatched_detections.astype(int), unmatched_trackers.astype(int)
 
 
@@ -258,7 +258,7 @@ class MetricsLogger:
         self.file_handle = open(self.output_path, 'w', newline='')
         self.writer = csv.writer(self.file_handle)
         self.writer.writerow(['frame_number', 'preprocess_time', 'detection_time', 'postprocess_time', 'tracking_time', 'counting_time', 'fish_count'])
-    
+
     def log(self, **kwargs):
         self.writer.writerow(list(kwargs.values()))
 
