@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # launcher_app.py
 
 import tkinter as tk
