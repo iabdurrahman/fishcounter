@@ -6,3 +6,7 @@
 # python binaries
 __pycache__/
 *.pyc
+
+# ignore datasets and models
+models/
+datasets/
