@@ -111,7 +111,7 @@ class FishCounterApp(tk.Tk):
         if self.detector is None:
             try:
                 # Sesuaikan path ke model Anda
-                model_path = str(self.config.model)
+                model_path = str(self.config["model"])
                 if not os.path.exists(model_path):
                         raise FileNotFoundError(f"Model tidak ditemukan di: {model_path}")
                 self.detector = ObjectDetector(model_path=model_path, img_size=(640, 640),
@@ -852,8 +852,17 @@ def read_config_and_sanitize(parser_args_result):
             config.update({"model" : DEFAULT_MODEL})
         # don't need to handle else case here, because it means model key is in config
     else:
-        config.update({"model" : resolve_path_with_home(parser_args_result.model[0])})
+        config.update({"model" : parser_args_result.model[0]})
 
+    # replace "~" with home directory
+    # resolve_path_with_home accept empty string too (in case config file set it to empty string)
+    # which is will return current working directory but since it woll break program anyway
+    # so just stop here
+    if (not config["model"]):
+        raise ValueError("model should be given in config file or program argument, and it should not empty string, default model is %s" % (DEFAULT_MODEL, ))
+
+    _model_path = resolve_path_with_home(config["model"])
+    config.update({"model" : _model_path})
 
 
     # ##################################################
@@ -877,12 +886,23 @@ def read_config_and_sanitize(parser_args_result):
                 pass
             else:
                 # if source is not empty string, then add to filtered_source list
-                filtered_source.append(resolve_path_with_home(source))
+                # DO NOT RESOLVE PATH WITH ~ HERE, WE WILL RESOLVE IT LATER!
+                filtered_source.append(source)
 
         # update with filtered_source, even if filtered_source is an empty list
         # (if config file give list of source, but command line have argument --source "",
         # it will discard all list in config file)
         config.update({"source" : filtered_source})
+
+    # resolve path if it has ~ before processing --add-source
+    # reuse filtered_source and source here
+    filtered_source = [] # initialize to empty list
+    for source in config["source"]:
+        # copy source to filtered_source but with resolved path
+        filtered_source.append(resolve_path_with_home(source))
+
+    # update config again
+    config.update({"source" : filtered_source})
 
     # ##################################################
     # config["source"]           --add-source   (append)
@@ -900,16 +920,18 @@ def read_config_and_sanitize(parser_args_result):
                 pass
             else:
                 # if source is not empty string, then directly add source to config["source"]
+                # resolve ~ here
                 config["source"].append(resolve_path_with_home(source))
 
 
     # ##################################################
     # MAKE COPY OF ["SOURCE"] BUT WITH TYPE STRING
+    # currently all content of source is an instance of pathlib.Path
     # ##################################################
     config.update({"source_str" : []})                  # initialize with empty list
     for source in config["source"]:
         # add to config
-        config["source_str"].append(str(resolve_path_with_home(source)))
+        config["source_str"].append(str(source)) # do not need to resolve ~ in path
 
 
     # ##################################################
