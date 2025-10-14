@@ -17,6 +17,7 @@ FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT="/home/orangepi/venv3"
 
 # absolute path to log
 FISHCOUNTER_LOG="/tmp/fishcounter.log"
+FISHCOUNTER_RUNNER_LOG="/tmp/fishcounter_runner.log"
 
 # run as user
 PROCESS_USER="orangepi"
@@ -44,6 +45,9 @@ E_CHMOD="/usr/bin/chmod"
 # where is chown executable
 E_CHOWN="/usr/bin/chown"
 
+# where is touch executable
+E_TOUCH="/usr/bin/touch"
+
 # ##################################################
 # timed halt
 # ##################################################
@@ -68,8 +72,8 @@ fi
 # 4. deactivate python virtual environment
 cat <<EOF > "$SECONDARY_SCRIPT"
 #!/bin/sh
-sed -e
-sed -x
+set -e
+set -x
 export DISPLAY=":0"
 . "$FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT/bin/activate"
 "$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
@@ -79,8 +83,15 @@ EOF
 # change secondary script permission
 "$E_CHMOD" --verbose "ugoa+rx,go-w" "$SECONDARY_SCRIPT"
 
+# create log file
+"$E_TOUCH" "$FISHCOUNTER_LOG"
+
+# change log file ownership and permission
+"$E_CHOWN" --verbose "$PROCESS_USER:$PROCESS_GROUP" "$FISHCOUNTER_LOG"
+"$E_CHMOD" --verbose "u+w,go-w,ugoa-x"              "$FISHCOUNTER_LOG"
+
 # run secondary script as user (we already in directory where launcher_app.py is)
-"$E_SUDO" -u "$PROCESS_USER" -g "$PROCESS_GROUP" "$SECONDARY_SCRIPT"
+"$E_SUDO" -u "$PROCESS_USER" -g "$PROCESS_GROUP" "$SECONDARY_SCRIPT" >> "$FISHCOUNTER_RUNNER_LOG" 2>&1
 
 # delete temporary script after program exit
 "$E_RM" --verbose "$SECONDARY_SCRIPT"
