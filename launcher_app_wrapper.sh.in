@@ -75,7 +75,7 @@ set -x
 export DISPLAY=":0"
 . "$FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT/bin/activate"
 cd "$FISHCOUNTER_ROOT/src"
-"$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
+"\$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
 deactivate
 EOF
 
