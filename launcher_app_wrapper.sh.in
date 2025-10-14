@@ -55,9 +55,6 @@ E_TOUCH="/usr/bin/touch"
 # halt a before running
 "$E_SLEEP" "$SLEEP_AMOUNT"
 
-# change directory to src, where launcher_app.py is
-cd "$FISHCOUNTER_ROOT/src"
-
 # create secondary script as a wrapper for activating python environment then running the program
 SECONDARY_SCRIPT="$("$E_MKTEMP")"
 if [ -z "$SECONDARY_SCRIPT" ] ; then
@@ -68,14 +65,16 @@ fi
 # sh script
 # 1. set display variable (display program in monitor 0, seat 0)
 # 2. activate python environment
-# 3. run actual launcher
-# 4. deactivate python virtual environment
+# 3. change directory to src, where launcher_app.py is
+# 4. run actual launcher
+# 5. deactivate python virtual environment
 cat <<EOF > "$SECONDARY_SCRIPT"
 #!/bin/sh
 set -e
 set -x
 export DISPLAY=":0"
 . "$FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT/bin/activate"
+cd "$FISHCOUNTER_ROOT/src"
 "$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
 deactivate
 EOF
@@ -90,7 +89,7 @@ EOF
 "$E_CHOWN" --verbose "$PROCESS_USER:$PROCESS_GROUP" "$FISHCOUNTER_LOG"
 "$E_CHMOD" --verbose "u+w,go-w,ugoa-x"              "$FISHCOUNTER_LOG"
 
-# run secondary script as user (we already in directory where launcher_app.py is)
+# run secondary script as user (directory change to where launcher_app.py is done in secondary script)
 "$E_SUDO" -u "$PROCESS_USER" -g "$PROCESS_GROUP" "$SECONDARY_SCRIPT" >> "$FISHCOUNTER_RUNNER_LOG" 2>&1
 
 # delete temporary script after program exit
