@@ -13,3 +13,7 @@ datasets/
 
 # ignore configuration file
 config.yaml
+
+# ignore deployment/platform-dependent script, (template script has .in extension)
+crontab
+launcher_app_wrapper.sh

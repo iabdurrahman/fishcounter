@@ -1,0 +1,86 @@
+#!/bin/sh
+set -e
+set -x
+
+# ##################################################
+# user configurable settings
+# ##################################################
+
+# absolute path to project root
+FISHCOUNTER_ROOT="/home/orangepi/fishcounter"
+
+# absolute path to config file
+FISHCOUNTER_CONFIG="/home/orangepi/fishcounter/config.yaml"
+
+# absolute path to python virtual environment
+FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT="/home/orangepi/venv3"
+
+# absolute path to log
+FISHCOUNTER_LOG="/tmp/fishcounter.log"
+
+# run as user
+PROCESS_USER="orangepi"
+PROCESS_GROUP="orangepi"
+
+# pause starting program because desktop maybe not ready before crontab is
+# called, this is for halting the program before running
+SLEEP_AMOUNT="15"
+
+# where is sleep executable
+E_SLEEP="/usr/bin/sleep"
+
+# where is sudo executable
+E_SUDO="/usr/bin/sudo"
+
+# where is mktemp executable
+E_MKTEMP="/usr/bin/mktemp"
+
+# where is rm executable
+E_RM="/usr/bin/rm"
+
+# where is chmod executable
+E_CHMOD="/usr/bin/chmod"
+
+# where is chown executable
+E_CHOWN="/usr/bin/chown"
+
+# ##################################################
+# timed halt
+# ##################################################
+
+# halt a before running
+"$E_SLEEP" "$SLEEP_AMOUNT"
+
+# change directory to src, where launcher_app.py is
+cd "$FISHCOUNTER_ROOT/src"
+
+# create secondary script as a wrapper for activating python environment then running the program
+SECONDARY_SCRIPT="$("$E_MKTEMP")"
+if [ -z "$SECONDARY_SCRIPT" ] ; then
+	# exit if we cannot make temporary script
+	exit 1
+fi
+
+# sh script
+# 1. set display variable (display program in monitor 0, seat 0)
+# 2. activate python environment
+# 3. run actual launcher
+# 4. deactivate python virtual environment
+cat <<EOF > "$SECONDARY_SCRIPT"
+#!/bin/sh
+sed -e
+sed -x
+export DISPLAY=":0"
+. "$FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT/bin/activate"
+"$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
+deactivate
+EOF
+
+# change secondary script permission
+"$E_CHMOD" --verbose "ugoa+rx,go-w" "$SECONDARY_SCRIPT"
+
+# run secondary script as user (we already in directory where launcher_app.py is)
+"$E_SUDO" -u "$PROCESS_USER" -g "$PROCESS_GROUP" "$SECONDARY_SCRIPT"
+
+# delete temporary script after program exit
+"$E_RM" --verbose "$SECONDARY_SCRIPT"
