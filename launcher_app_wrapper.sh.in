@@ -52,8 +52,22 @@ E_TOUCH="/usr/bin/touch"
 # timed halt
 # ##################################################
 
-# halt a before running
-"$E_SLEEP" "$SLEEP_AMOUNT"
+# check if we get argument "--forward"
+if [ \( "$#" -gt "0" \) -a \( "x$1" = "x--forward" \) ] ; then
+	# tell secondary script that we forwarding X11
+	ARE_WE_FORWARDING_X11="yes"
+
+	# do not need to halt before running secondary script
+else
+	# we dont forwarding X11, this means that
+	# we running this script from crontab or some startup/init script
+	ARE_WE_FORWARDING_X11="no"
+
+	# halt a before running secondary script
+	# it is ok to halt here, because startup script/crontab
+	# running this script in background anyway
+	"$E_SLEEP" "$SLEEP_AMOUNT"
+fi
 
 # create secondary script as a wrapper for activating python environment then running the program
 SECONDARY_SCRIPT="$("$E_MKTEMP")"
@@ -72,7 +86,14 @@ cat <<EOF > "$SECONDARY_SCRIPT"
 #!/bin/sh
 set -e
 set -x
-export DISPLAY=":0"
+ARE_WE_FORWARDING_X11="$ARE_WE_FORWARDING_X11"
+if   [ "\$ARE_WE_FORWARDING_X11" = "yes" ] ; then
+	: # do nothing
+elif [ "\$ARE_WE_FORWARDING_X11" =  "no" ] ; then
+	export DISPLAY=":0"
+else
+	exit 1
+fi
 . "$FISHCOUNTER_PYTHON_VIRTUAL_ENVIRONMENT/bin/activate"
 cd "$FISHCOUNTER_ROOT/src"
 "\$PWD/launcher_app.py" --config "$FISHCOUNTER_CONFIG" >> "$FISHCOUNTER_LOG" 2>&1
