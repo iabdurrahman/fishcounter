@@ -29,186 +29,180 @@ git clone --depth 1 https://github.com/ArvinNathanielTjong/fishcounter-training.
 
 # 🍊 Orange Pi 5 Pro Setup
 
-## clone this repo
+## Download official SD Card Image for Orange Pi 5 Pro
+
+Get your latest image from:
+http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/service-and-support/Orange-Pi-5-Pro.html
+
+Currently we use ubuntu image (desktop XFCE, kernel 6.1.43), other image may work, but it not tested.
+
+Flash your image to MicroSD card with minimum size 16 GB. You can flash your MicroSD card by tools like `dd` or balena etcher.
+
+Optional: put your `authorized_keys` in your home ssh (`/root/.ssh`, `/home/orangepi/.ssh`) so you can ssh into orangepi immediately
+
+## Update your system and install/download additional software package
+
+to update your system, connect your orange pi to internet, and run this:
 ``` bash
-git clone --depth 1 https://github.com/ArvinNathanielTjong/fishcounter.git
-```
-
-
-## 📦 Install Python & Libraries
-
-```bash
 sudo apt update
-sudo apt install python3-tk python3-pil.imagetk python3-pip
-/bin/python -m pip install opencv-python
-git submodule update --init --recursive
-pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
-pip install requests filterpy
+sudo apt upgrade --no-install-recommends
 ```
 
-
-
-REFERENCE FOR THE THINGS BELOW :  
-🔗 https://github.com/Qengineering/YoloV6-NPU
-
----
-### Installing the dependencies.
-Start with the usual 
-```
-sudo apt-get update 
-sudo apt-get upgrade
-sudo apt-get install cmake wget curl
+install python-tk (tk is not available in virtual environment, so use native from system)
+```bash
+sudo apt install python3-tk --no-install-recommends 
 ```
 
-#### RKNPU2
-```
-git clone --depth 1 https://github.com/airockchip/rknn-toolkit2.git
-```
-We only use a few files.
-```
-rknn-toolkit2-master
-│      
-└── rknpu2
-    │      
-    └── runtime
-        │       
-        └── Linux
-            │      
-            └── librknn_api
-                ├── aarch64
-                │   └── librknnrt.so
-                └── include
-                    ├── rknn_api.h
-                    ├── rknn_custom_op.h
-                    └── rknn_matmul_api.h
+Install virtual environment & cmake. you can use `apt` to install those, but we will manually install locally in "$HOME/fakeroot/local" folder.
 
-cd ~/rknn-toolkit2-master/rknpu2/runtime/Linux/librknn_api/aarch64
-sudo cp ./librknnrt.so /usr/local/lib
-cd ~/rknn-toolkit2-master/rknpu2/runtime/Linux/librknn_api/include
-sudo cp ./rknn_* /usr/local/include
-```
-AFTER THAT GO TO THIS PATH : 
-```
-/rknn-toolkit2/rknn-toolkit2/packages/arm64 
-```
-then install the requirement & the package (mine is python 3.10): 
-```
-pip install -r arm64_requirements_cp310.txt
-pip install rknn_toolkit2-2.3.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+Download from here:
+1. virtualenv - https://bootstrap.pypa.io/virtualenv.pyz
+2. cmake - https://cmake.org/download/ (use the aarch64)
 
+Put `virtualenv.pyz` in `fakeroot/local`. Extract cmake in `fakeroot/local`. You will have following result in `fakeroot/local` (in this example, we use cmake version 4.1.2):
+```
+orangepi@orangepi5pro:~/fakeroot/local$ ll
+total 8204
+drwxr-xr-x 3 orangepi orangepi    4096 Oct 21 21:44 ./
+drwxr-xr-x 4 orangepi orangepi    4096 Oct 21 21:42 ../
+drwxr-xr-x 6 orangepi orangepi    4096 Oct 21 21:43 cmake-4.1.2-linux-aarch64/
+-rw-r--r-- 1 orangepi orangepi 8386700 Oct 11 05:33 virtualenv.pyz
 ```
 
-Save 2 GB of disk space by removing the toolkit. We do not need it anymore.
+(optional) make soft link `cmake` to `cmake-<version>-linux-aarch64` so we can refer to it easily.
 ```
-cd ~
-sudo rm -rf ./rknn-toolkit2-master
-```
-
----
-
-### make sure to install the torch version to the one at the start if it uninstall and install the torch
-```
-pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 #if neccesary
+orangepi@orangepi5pro:~/fakeroot/local$ ln --verbose --interactive --symbolic cmake-4.1.2-linux-aarch64 cmake
+'cmake' -> 'cmake-4.1.2-linux-aarch64'
 ```
 
-
-Try to follow the instructions below:
-
-Clone the rknpu2 repository: 
+after link created, you will have `fakeroot/local` like this:
 ```
-git clone --depth 1 https://github.com/rockchip-linux/rknpu2.git
+orangepi@orangepi5pro:~/fakeroot/local$ ll
+total 8204
+drwxr-xr-x 3 orangepi orangepi    4096 Oct 21 21:47 ./
+drwxr-xr-x 4 orangepi orangepi    4096 Oct 21 21:42 ../
+lrwxrwxrwx 1 orangepi orangepi      25 Oct 21 21:47 cmake -> cmake-4.1.2-linux-aarch64/
+drwxr-xr-x 6 orangepi orangepi    4096 Oct 21 21:43 cmake-4.1.2-linux-aarch64/
+-rw-r--r-- 1 orangepi orangepi 8386700 Oct 11 05:33 virtualenv.pyz
 ```
 
-Copy the shared lib file to the lib dir: 
-```
-sudo cp rknpu2/runtime/RK3588/Linux/librknn_api/aarch64/librknnrt.so /usr/lib/librknnrt.so
-```
-### you can delete the rknpu repo after you copy the lib file !
+## Clone these repository to HOME directory
 
----
+fish counter: as main application and needed for setup virtual environment
+``` bash
+git clone "https://github.com/iabdurrahman/fishcounter.git" --recurse-submodules
+```
 
-## 🔔 GPIO (Buzzer) Setup
+rknn-toolkit2:
+```bash
+git clone "https://github.com/airockchip/rknn-toolkit2.git" --recurse-submodules
+```
+
+## Replace `librknnrt.so` and `librknn_api.so` with the one from rknn-toolkit2 repository
+
+backup current library:
+```bash
+sudo mv --verbose --interactive   "/usr/lib/librknnrt.so"     "/usr/lib/librknnrt.so~"
+sudo mv --verbose --interactive   "/usr/lib/librknn_api.so"   "/usr/lib/librknn_api.so~"
+```
+
+copy library from repository:
+```bash
+sudo cp --verbose --interactive   "$HOME/rknn-toolkit2/rknpu2/runtime/Linux/librknn_api/aarch64/librknnrt.so"  "/usr/lib/librknnrt.so"
+sudo cp --verbose --interactive   "$HOME/rknn-toolkit2/rknpu2/runtime/Linux/librknn_api/aarch64/librknnrt.so"  "/usr/lib/librknn_api.so"
+```
+
+## Copy C header file from rknn-toolkit2 repository to `/usr/include`
 
 ```bash
-sudo apt install python3-periphery
-sudo nano /etc/udev/rules.d/99-gpio.rules
+sudo cp --verbose --interactive   -t  "/usr/include" "$HOME/rknn-toolkit2/rknpu2/runtime/Linux/librknn_api/include"/*
 ```
 
-Paste this content:
+## Create python virtual environment
+
+create virtual environment in `"$HOME/venv3"`
+```bash
+python3 "$HOME/fakeroot/local/virtualenv.pyz" --download --python="python3" "$HOME/venv3"
+```
+
+activate virtual environment and add cmake to `$PATH`
+```bash
+. "$HOME/venv3/bin/activate"
+export PATH="$PATH:$HOME/fakeroot/local/cmake/bin"
+```
+
+export cmake minimum as work around for `cmake_minimum_required`:
+```bash
+export CMAKE_POLICY_VERSION_MINIMUM="3.7"
+```
+
+install preliminary package from fishcounter repository:
+```bash
+pip install --verbose --require-virtualenv --requirement "$HOME/fishcounter/preliminary_requirements.txt"
+```
+
+install packages for rknn_toolkit2; check your python version and use the one match your python version:
+```bash
+orangepi@orangepi5pro:~$ python --version
+Python 3.10.12
+```
+
+in this example, we will use `3.10` as version for installation
+```bash
+pip install --verbose --require-virtualenv --requirement "$HOME/rknn-toolkit2/rknn-toolkit2/packages/arm64/arm64_requirements_cp310.txt"
+pip install --verbose --require-virtualenv "$HOME/rknn-toolkit2/rknn-toolkit2/packages/arm64/rknn_toolkit2-2.3.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+```
+
+install requirements from fishcounter repository:
+```bash
+pip install --verbose --require-virtualenv --requirement "$HOME/fishcounter/requirements.txt"
+```
+
+
+## add udev rules and add group `gpio`
+
+these rules are for connecting to arduino board (through uart) and access to gpio (for buzzer) as regular user (not root)
 
 ```bash
-SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", PROGRAM="/bin/sh -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'"
-SUBSYSTEM=="gpio", KERNEL=="gpio*", ACTION=="add", PROGRAM="/bin/sh -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'"
+sudo cp --verbose --interactive -t "/etc/udev/rules.d" "$HOME/fishcounter/udev_rules"/*
 ```
 
-Then run:
+add group `gpio` if not yet exist (you can check it in `/etc/group`)
+```bash
+sudo groupadd "gpio"
+```
+
+make current user (in this case is `orangepi`) included in group `gpio`
 
 ```bash
-sudo groupadd gpio        # Skip if already exists
-sudo usermod -aG gpio orangepi
-sudo udevadm control --reload-rules
-sudo udevadm trigger
+sudo usermod --append --groups "gpio" "orangepi"
 ```
 
----
 
-# 🔌 UART Setup
+## adapt platform dependent file to your platform
+
+Use these template to produce file:
+1. `$HOME/fishcounter/config.yaml.in` to create `$HOME/fishcounter/config.yaml`
+2. `$HOME/fishcounter/launcher_app_wrapper.sh.in` to create `$HOME/fishcounter/launcher_app_wrapper.sh`
+3. `$HOME/fishcounter/crontab.in` to create `$HOME/fishcounter/crontab`
+
+set script `$HOME/fishcounter/launcher_app_wrapper.sh` to be executable:
+```bash
+chmod --verbose "ugoa+x" "$HOME/fishcounter/launcher_app_wrapper.sh"
+```
+
+## create crontab so application can startup automatically
 
 ```bash
-pip install pyserial
-sudo apt install python3-serial
-```
-### restart the orange pi!
-
-```
-# for launching the app
-python3 launcher_app.py
+sudo crontab -u "root" "$HOME/fishcounter/crontab"
 ```
 
----
+# Test with X11 forwarding through SSH
 
-# 🕒 Run on Boot Using Crontab
+after opening ssh session with X11 forwarding, run:
 
 ```bash
-crontab -e
-```
-
-Add this line:
-
-```bash
-@reboot (sleep 15 && export DISPLAY=:0 && cd /home/orangepi/github/fishcounter/src/ && /usr/bin/python3 launcher_app.py) >> /home/orangepi/github/fishcounter/launcher.log 2>&1
-```
-
-✅ Make sure your paths are correct!
-
----
-
-# 📝 Notes
-
-- Ensure your `.rknn` model file is ready to use NPU.
-- Orange Pi 5 Pro uses **Rockchip RK3588S** chip.
-
----
-
-# 🔁 Udev Rules for Arduino Port (Optional)
-
-Create a file:
-
-```bash
-sudo nano /etc/udev/rules.d/99-fishcounter.rules
-```
-
-Paste this content:
-
-```bash
-SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", MODE="0666", SYMLINK+="arduino"
-```
-
-Then reload the rules:
-
-```bash
-sudo udevadm control --reload-rules
-sudo udevadm trigger
+"$HOME/fishcounter/launcher_app_wrapper.sh" --forward
 ```
 
 

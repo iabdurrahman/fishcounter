@@ -1,2 +1,2 @@
-#Cython
+Cython
 wheel
