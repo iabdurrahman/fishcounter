@@ -188,7 +188,7 @@ Use these template to produce file:
 
 set script `$HOME/fishcounter/launcher_app_wrapper.sh` to be executable:
 ```bash
-chmod --verbose "ugoa+x" "$HOME/fishcounter/launcher_app_wrapper.sh"
+chmod --verbose "ugoa+x,go-w" "$HOME/fishcounter/launcher_app_wrapper.sh"
 ```
 
 ## create crontab so application can startup automatically
@@ -202,7 +202,7 @@ sudo crontab -u "root" "$HOME/fishcounter/crontab"
 after opening ssh session with X11 forwarding, run:
 
 ```bash
-"$HOME/fishcounter/launcher_app_wrapper.sh" --forward
+sudo "$HOME/fishcounter/launcher_app_wrapper.sh" --forward
 ```
 
 
