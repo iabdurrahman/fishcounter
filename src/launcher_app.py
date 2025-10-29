@@ -1050,7 +1050,7 @@ def read_config_and_sanitize(parser_args_result):
     # ##################################################
 
     # check if user give --nms-thresh argument in command line
-    if (not parser_args_result.obj_thresh):
+    if (not parser_args_result.nms_thresh):
         # assume config["vision"]["detection"] is exist
         # check if setting is available in default config or config file
         if ("nms_thresh" not in config["vision"]["detection"]):
