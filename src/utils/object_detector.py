@@ -48,7 +48,7 @@ class ObjectDetector:
 
         # --- Define Counting Boundaries ---
         # PERBAIKAN: Gunakan IMG_SIZE[1] (tinggi) dan ganti nama variabel
-        self.line_y_pos = int(0.3 * self.IMG_SIZE[1])
+        self.line_y_pos = int(0.43 * self.IMG_SIZE[1])
         self.line_y_pos_bottom = int(0.4 * self.IMG_SIZE[1])
         self.line_y_pos_top = int(0.3 * self.IMG_SIZE[1])
 
